@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gauntlet Power Surge Challenge</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-green': '#39FF14',
+                        'dark-bg': '#0a0a0a',
+                        'card-bg': '#1a1a1a',
+                        'accent-gray': '#2d2d2d'
+                    },
+                    fontFamily: {
+                        'teko': ['Teko', 'sans-serif'],
+                        'roboto': ['Roboto', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #050505;
+            color: white;
+        }
+        h1, h2, h3, .brand-font {
+            font-family: 'Teko', sans-serif;
+            text-transform: uppercase;
+        }
+        .neon-text {
+            color: #39FF14;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #39FF14; 
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #39FF14;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            background: black;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Certificate Styles */
+        #certificateCanvas {
+            max-width: 100%;
+            height: auto;
+            border: 5px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Hall of Fame Transitions */
+        .hof-entry {
+            transition: all 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-card-bg border-b border-gray-800 p-4 sticky top-0 z-50 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showView('dashboard')">
+                <img src="Gauntlet Power Surge Logo.jpeg" alt="Logo" class="h-12 w-12 object-contain rounded-full border border-gray-700" onerror="this.src='https://placehold.co/100x100/000000/39FF14?text=PS'">
+                <div class="hidden md:block">
+                    <h1 class="text-2xl font-bold leading-none tracking-wider text-white">THE GAUNTLET</h1>
+                    <span class="text-neon-green text-sm tracking-widest font-bold">POWER SURGE</span>
+                </div>
+            </div>
+            
+            <div id="nav-actions" class="hidden flex items-center gap-4">
+                <span id="nav-username" class="hidden md:inline text-neon-green font-teko text-xl tracking-wide mr-2"></span>
+                <button onclick="showView('dashboard')" class="text-gray-300 hover:text-white transition"><i class="fas fa-home mr-1"></i> Home</button>
+                <button onclick="showView('profile')" class="text-gray-300 hover:text-white transition"><i class="fas fa-user mr-1"></i> Profile</button>
+                <button onclick="handleLogout()" class="text-red-400 hover:text-red-300 transition"><i class="fas fa-sign-out-alt mr-1"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="app-container" class="flex-grow container mx-auto p-4 md:p-6 relative">
+        
+        <!-- LOADING SPINNER -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center hidden">
+            <div class="loader"></div>
+        </div>
+
+        <!-- AUTH VIEW (Landing Page) -->
+        <div id="auth-view" class="max-w-4xl mx-auto mt-6 grid md:grid-cols-2 gap-8">
+            
+            <!-- Login Column -->
+            <div class="bg-card-bg p-8 rounded-2xl border border-gray-800 shadow-2xl h-fit">
+                <div class="text-center mb-8">
+                    <img src="Gauntlet Power Surge Logo.jpeg" alt="Logo" class="h-24 mx-auto mb-4 rounded-full border-2 border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)] animate-pulse-slow" onerror="this.src='https://placehold.co/150x150/000000/39FF14?text=PS'">
+                    <h2 class="text-4xl text-white mb-1">ENTER THE GAUNTLET</h2>
+                    <p class="text-gray-400 text-sm">Join the surge.</p>
+                </div>
+
+                <form id="auth-form" onsubmit="handleLogin(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Username (Visible on Certificate)</label>
+                        <input type="text" id="login-username" required placeholder="e.g. IronWarrior" class="w-full bg-dark-bg border border-gray-700 text-white p-3 rounded focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Email Address (Unique ID)</label>
+                        <input type="email" id="login-email" required placeholder="e.g. warrior@example.com" class="w-full bg-dark-bg border border-gray-700 text-white p-3 rounded focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition">
+                        <p class="text-[10px] text-gray-600 mt-1">We use your email to save your progress on this device.</p>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-neon-green hover:bg-green-400 text-black font-teko text-xl font-bold py-3 rounded transition transform active:scale-95 shadow-[0_0_10px_rgba(57,255,20,0.4)]">
+                        START CHALLENGE
+                    </button>
+                </form>
+
+                <!-- Mission Briefing / Guidelines -->
+                <div class="mt-8 pt-6 border-t border-gray-800">
+                    <h3 class="text-xl text-white font-teko mb-2"><i class="fas fa-clipboard-list text-neon-green mr-2"></i> MISSION BRIEFING</h3>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-dumbbell text-gray-600 w-5"></i> <strong>Gear:</strong> Dumbbells & a Gym Mat recommended.</li>
+                        <li><i class="fas fa-body text-gray-600 w-5"></i> <strong>No Gear?</strong> Stick to bodyweight variations!</li>
+                        <li><i class="fas fa-play-circle text-gray-600 w-5"></i> <strong>Format:</strong> 1-3 curated videos per day.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hall of Fame Column -->
+            <div class="flex flex-col gap-6">
+                <!-- Hall of Fame Card -->
+                <div class="bg-card-bg p-6 rounded-2xl border border-gray-800 shadow-xl relative overflow-hidden flex-1">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i class="fas fa-trophy text-6xl text-yellow-500"></i>
+                    </div>
+                    <h3 class="text-3xl text-yellow-500 font-teko mb-1 border-b border-gray-800 pb-2">HALL OF THE CHARGED</h3>
+                    <p class="text-xs text-gray-500 mb-4 uppercase font-bold">Warriors who conquered the surge</p>
+                    
+                    <div id="hall-of-fame-list" class="space-y-3 min-h-[250px]">
+                        <!-- Populated by JS -->
+                        <div class="animate-pulse flex space-x-4">
+                            <div class="h-10 w-10 bg-gray-700 rounded-full"></div>
+                            <div class="flex-1 space-y-2 py-1">
+                              <div class="h-2 bg-gray-700 rounded"></div>
+                              <div class="h-2 bg-gray-700 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motivation Card -->
+                <div class="bg-gradient-to-br from-gray-900 to-black p-6 rounded-2xl border border-gray-800 flex items-center justify-center text-center">
+                    <div>
+                        <p class="text-neon-green font-teko text-2xl">"IT DOES NOT GET EASIER.</p>
+                        <p class="text-white font-teko text-3xl">YOU GET STRONGER."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view" class="hidden animate-fade-in pb-20">
+            <!-- Header Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-card-bg p-4 rounded-xl border-l-4 border-neon-green">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Total Progress</p>
+                    <p class="text-3xl font-teko" id="total-progress">0%</p>
+                </div>
+                <div class="bg-card-bg p-4 rounded-xl border-l-4 border-blue-500">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Workouts Done</p>
+                    <p class="text-3xl font-teko" id="workouts-done">0</p>
+                </div>
+                 <div class="bg-card-bg p-4 rounded-xl border-l-4 border-purple-500">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Streak</p>
+                    <p class="text-3xl font-teko" id="streak-count">Active</p>
+                </div>
+                <div class="bg-card-bg p-4 rounded-xl border-l-4 border-yellow-500 flex flex-col justify-center items-start">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Certificate</p>
+                    <button id="cert-btn-locked" class="text-gray-600 text-sm cursor-not-allowed font-bold"><i class="fas fa-lock"></i> LOCKED</button>
+                    <button id="cert-btn-unlocked" onclick="showCertificate()" class="text-yellow-400 text-lg font-bold hidden animate-pulse hover:text-yellow-300"><i class="fas fa-trophy"></i> CLAIM NOW</button>
+                </div>
+            </div>
+
+            <!-- Weeks Grid -->
+            <div class="space-y-8" id="weeks-container">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+
+        <!-- WORKOUT DETAIL MODAL -->
+        <div id="workout-modal" class="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+            <div class="bg-card-bg w-full max-w-4xl rounded-xl border border-gray-800 shadow-2xl relative flex flex-col max-h-full">
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-dark-bg rounded-t-xl">
+                    <div>
+                        <h3 id="modal-title" class="text-2xl md:text-3xl text-white font-teko">WORKOUT TITLE</h3>
+                        <p id="modal-subtitle" class="text-neon-green text-sm font-bold">WEEK 1 • DAY 1</p>
+                    </div>
+                    <button onclick="closeWorkoutModal()" class="text-gray-400 hover:text-white text-2xl px-2">&times;</button>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="p-4 overflow-y-auto" id="modal-content">
+                    <!-- Video players injected here -->
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-gray-800 bg-dark-bg rounded-b-xl flex justify-between items-center">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-dumbbell mr-1"></i> Ensure you warm up before starting.
+                    </div>
+                    <button id="mark-complete-btn" onclick="toggleCurrentWorkoutComplete()" class="bg-gray-700 text-white px-6 py-2 rounded font-teko text-xl hover:bg-neon-green hover:text-black transition">
+                        MARK COMPLETE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="profile-view" class="hidden max-w-2xl mx-auto mt-6">
+            <h2 class="text-4xl mb-6 border-b border-gray-800 pb-2">MY PROFILE</h2>
+            
+            <div class="bg-card-bg p-6 rounded-xl border border-gray-800 mb-6">
+                <h3 class="text-xl font-bold mb-4 text-neon-green">Warrior Details</h3>
+                <div class="mb-4">
+                    <label class="block text-gray-500 text-xs uppercase font-bold mb-1">Username</label>
+                    <div id="profile-username" class="text-white text-2xl font-teko tracking-wide">...</div>
+                </div>
+                <div class="mb-4">
+                     <label class="block text-gray-500 text-xs uppercase font-bold mb-1">Email ID</label>
+                     <div id="profile-email" class="text-gray-400 text-sm font-mono">...</div>
+                </div>
+            </div>
+
+            <div class="bg-card-bg p-6 rounded-xl border border-red-900/30">
+                <h3 class="text-xl font-bold mb-4 text-red-500">Danger Zone</h3>
+                <p class="text-gray-400 text-sm mb-4">Resetting progress will clear all your completed workouts for this account on this device. This cannot be undone.</p>
+                <button onclick="resetUserProgress()" class="bg-red-900/50 border border-red-800 text-red-200 font-bold py-2 px-6 rounded hover:bg-red-800 transition">Reset All Progress</button>
+            </div>
+        </div>
+
+        <!-- CERTIFICATE MODAL -->
+        <div id="certificate-modal" class="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center hidden p-4">
+            <div class="bg-white p-2 rounded-lg max-w-4xl w-full relative">
+                <button onclick="document.getElementById('certificate-modal').classList.add('hidden')" class="absolute -top-10 right-0 text-white text-3xl hover:text-neon-green">&times;</button>
+                <div class="overflow-auto max-h-[90vh] flex flex-col items-center gap-4">
+                    <canvas id="certificateCanvas" width="800" height="600"></canvas>
+                    <a id="download-link" class="bg-black text-white px-8 py-3 font-teko text-2xl rounded hover:bg-neon-green hover:text-black transition cursor-pointer shadow-xl">
+                        DOWNLOAD CERTIFICATE
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- DISCLAIMER FOOTER -->
+    <footer class="bg-black py-6 border-t border-gray-900 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-600 text-xs leading-relaxed max-w-3xl mx-auto">
+                <strong class="text-gray-500">DISCLAIMER:</strong> The Gauntlet Power Surge Challenge acts as a curator of public content. All workout videos, routines, and associated intellectual property belong to their respective content creators on YouTube. We do not claim ownership of any footage. This platform is a community tool for tracking personal progress through a shared playlist of workouts. Please consult a physician before beginning any exercise program.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- WORKOUT DATA ---
+        const workoutData = [
+            {
+                title: "WEEK 1",
+                days: [
+                    { day: 1, title: "Full Body", videos: [{id: "fsmV9Uaz0c", trainer: "DHM", time: "30m", type: "Weights"}, {id: "FwWf1KLM3ro", trainer: "CH", time: "10m", type: "Body"}] },
+                    { day: 2, title: "Upper & Core", videos: [{id: "CyARVVIq-Oc", trainer: "DHM", time: "30m", type: "Weights"}, {id: "lolldJiLf90", trainer: "CH", time: "10m", type: "Body"}] },
+                    { day: 3, title: "Lower Push", videos: [{id: "r78WzW27-Ul", trainer: "DHM", time: "20m", type: "Weights"}, {id: "UZ3U0X5fb1Y", trainer: "HR", time: "20m", type: "Weights"}] },
+                    { day: 4, title: "Legs & Cardio", videos: [{id: "C5ayBgdUjOU", trainer: "GA", time: "20m", type: "Weights"}, {id: "dFCkDHglbvM", trainer: "JY", time: "20m", type: "Body"}] },
+                    { day: 5, title: "Full Body Surge", videos: [{id: "J2SJAXxTp4M", trainer: "FK", time: "45m", type: "Weights"}] },
+                ]
+            },
+            {
+                title: "WEEK 2",
+                days: [
+                    { day: 1, title: "Upper Focus", videos: [{id: "XVwVnFQCqNw", trainer: "DHM", time: "20m", type: "Weights"}, {id: "8PwoytUU06g", trainer: "CH", time: "20m", type: "Body"}] },
+                    { day: 2, title: "Lower Endurance", videos: [{id: "UF7dfEEVDp8", trainer: "GA", time: "40m", type: "Weights"}, {id: "hRlp66B-lx4", trainer: "JY", time: "10m", type: "Body"}] },
+                    { day: 3, title: "Double Upper", videos: [{id: "155Nb8rjYLw", trainer: "HR", time: "20m", type: "Weights"}, {id: "K01g2UV7YM0", trainer: "DHM", time: "20m", type: "Weights"}] },
+                    { day: 4, title: "Lower Power", videos: [{id: "hBanCm-yqB8", trainer: "CG", time: "30m", type: "Weights"}, {id: "jPRZJcowjs4", trainer: "JY", time: "20m", type: "Body"}] },
+                    { day: 5, title: "The Long Haul", videos: [{id: "9gilbVUqPIQ", trainer: "HR", time: "60m", type: "Weights"}] },
+                ]
+            },
+            {
+                title: "WEEK 3",
+                days: [
+                    { day: 1, title: "Total Body", videos: [{id: "ihSylL7kF4M", trainer: "JH", time: "20m", type: "Weights"}, {id: "hy6NNyzX31U", trainer: "GA", time: "20m", type: "Weights"}] },
+                    { day: 2, title: "Upper & Core", videos: [{id: "K01g2UV7YM0", trainer: "T&D", time: "20m", type: "Weights"}, {id: "SGGFhEpAkPw", trainer: "BJ", time: "20m", type: "Body"}] },
+                    { day: 3, title: "Lower Strength", videos: [{id: "-kWoqHoLJWE", trainer: "HR", time: "30m", type: "Weights"}, {id: "7nxUt-QPBjs", trainer: "JH", time: "20m", type: "Body"}] },
+                    { day: 4, title: "Mix It Up", videos: [{id: "ZEZqSKzQ0Qc", trainer: "DHM", time: "30m", type: "Weights"}, {id: "wcSiAdCnvCQ", trainer: "AT", time: "20m", type: "Body"}] },
+                    { day: 5, title: "Power Finish", videos: [{id: "UhjLARslips", trainer: "FK", time: "50m", type: "Weights"}] },
+                ]
+            },
+            {
+                title: "WEEK 4",
+                days: [
+                    { day: 1, title: "Upper Blast", videos: [{id: "sKz102jMW4A", trainer: "DHM", time: "30m", type: "Weights"}, {id: "Eq4qBpBa071", trainer: "CH", time: "20m", type: "Body"}] },
+                    { day: 2, title: "Lower Grind", videos: [{id: "l5gWYLJKFwQ", trainer: "BJ", time: "45m", type: "Weights"}, {id: "WfdXMj917H0", trainer: "AT", time: "10m", type: "Body"}] },
+                    { day: 3, title: "Upper & Full", videos: [{id: "lBickDLoU8o", trainer: "BJ", time: "20m", type: "Weights"}, {id: "9UQ60VIHIQ4", trainer: "GA", time: "35m", type: "Weights"}] },
+                    { day: 4, title: "The Surge", videos: [{id: "vp8ASKZGU8Y", trainer: "DHM", time: "50m", type: "Weights"}, {id: "jzUpUe29IXI", trainer: "CH", time: "8m", type: "Body"}] },
+                    { day: 5, title: "Final Exam", videos: [{id: "bk0JISXMbS4", trainer: "FK", time: "45m", type: "Weights"}, {id: "-NFhnXvbdoc", trainer: "T&D", time: "10m", type: "Body"}] },
+                ]
+            },
+            {
+                title: "BONUS WEEK",
+                isBonus: true,
+                days: [
+                    { day: 1, title: "Bonus Upper", videos: [{id: "nixaLRF0Jd8", trainer: "OS", time: "20m", type: "Weights"}, {id: "mm47bCaCzpQ", trainer: "BJ", time: "20m", type: "Body"}] },
+                    { day: 2, title: "Bonus Lower", videos: [{id: "0YCRcnhd410", trainer: "HR", time: "20m", type: "Weights"}, {id: "fsmV9Uaz0c", trainer: "DHM", time: "30m", type: "Weights"}] },
+                    { day: 3, title: "Bonus Mix", videos: [{id: "JBz2dILOVIc", trainer: "AT", time: "20m", type: "Body"}, {id: "3p35bBbxNTk", trainer: "NBD", time: "25m", type: "Body"}] },
+                    { day: 4, title: "Bonus Strength", videos: [{id: "fJQmoPKvjTg", trainer: "T&D", time: "30m", type: "Weights"}, {id: "KNFbXsO5J5U", trainer: "JH", time: "20m", type: "Body"}] },
+                    { day: 5, title: "Bonus Finish", videos: [{id: "Umlq-LeOoDo", trainer: "FK", time: "45m", type: "Weights"}] },
+                ]
+            }
+        ];
+
+        // --- MOCK HALL OF FAME DATA ---
+        const hallOfFameNames = [
+            "SarahShreds", "IronMike88", "GymRat_V2", "KetoKing", "LiftLife", 
+            "PowerPam", "ZenWarrior", "BarbellBen", "CardioQueen", "FlexMaster",
+            "TitaniumTim", "LolaLifts", "RepsForJesus", "FitFiona", "GainsGoblin",
+            "BeastModeON", "SteelSophie", "MaxPower", "RunningWild", "AlphaWolf"
+        ];
+
+        // --- GLOBAL STATE ---
+        let currentUser = null; // Object: { name, email }
+        let userProgress = {}; // Object: { "wX_dY": true/false }
+        let currentModalWeek = 0;
+        let currentModalDay = 0;
+        let hofInterval = null;
+
+        // --- INITIALIZATION ---
+        const initApp = () => {
+            const savedUser = localStorage.getItem('gauntlet_user');
+            
+            // Start the Hall of Fame ticker regardless of login state
+            startHallOfFameTicker();
+
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    loginSuccess(false); // false = don't scroll yet, wait for render
+                } catch(e) {
+                    console.error("Auth Error", e);
+                    localStorage.removeItem('gauntlet_user');
+                }
+            } else {
+                showAuthView();
+            }
+        };
+
+        // --- HALL OF FAME LOGIC ---
+        const startHallOfFameTicker = () => {
+            const listEl = document.getElementById('hall-of-fame-list');
+            if(!listEl) return;
+
+            let currentIndex = 0;
+            const batchSize = 5;
+
+            const renderBatch = () => {
+                listEl.innerHTML = ''; // Clear current
+                
+                for(let i = 0; i < batchSize; i++) {
+                    const nameIndex = (currentIndex + i) % hallOfFameNames.length;
+                    const name = hallOfFameNames[nameIndex];
+                    
+                    const row = document.createElement('div');
+                    row.className = "flex items-center gap-3 bg-dark-bg p-2 rounded border border-gray-800 animate-fade-in hof-entry";
+                    row.innerHTML = `
+                        <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-green-800 to-green-500 flex items-center justify-center text-xs font-bold text-black">
+                            ${name.substring(0,1)}
+                        </div>
+                        <span class="text-gray-300 text-sm font-bold font-teko tracking-wide">${name}</span>
+                        <i class="fas fa-check-circle text-neon-green ml-auto text-xs"></i>
+                    `;
+                    listEl.appendChild(row);
+                }
+                currentIndex = (currentIndex + batchSize) % hallOfFameNames.length;
+            };
+
+            renderBatch(); // Initial render
+            hofInterval = setInterval(renderBatch, 6000); // Update every 6 seconds
+        };
+
+
+        // --- AUTH LOGIC (LOCAL STORAGE) ---
+        const handleLogin = (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+
+            if (!username || !email) return;
+
+            currentUser = {
+                name: username,
+                email: email
+            };
+
+            // Save session
+            localStorage.setItem('gauntlet_user', JSON.stringify(currentUser));
+            loginSuccess(true); // true = animate/scroll to current
+        };
+
+        const loginSuccess = (shouldScroll = true) => {
+            // Load user specific progress
+            loadUserProgress();
+            
+            // Update UI
+            document.getElementById('nav-username').textContent = currentUser.name;
+            document.getElementById('profile-username').textContent = currentUser.name;
+            document.getElementById('profile-email').textContent = currentUser.email;
+            
+            document.getElementById('nav-actions').classList.remove('hidden');
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            
+            renderDashboard();
+
+            // SMART RESUME: Scroll to last incomplete day
+            if (shouldScroll) {
+                setTimeout(scrollToCurrentProgress, 500); // Slight delay for render
+            }
+        };
+
+        const scrollToCurrentProgress = () => {
+            // Find the first workout that is NOT done
+            let targetId = null;
+            
+            // Loop through weeks and days to find first missing
+            for (let w = 0; w < workoutData.length; w++) {
+                for (let d = 0; d < workoutData[w].days.length; d++) {
+                    const key = `w${w}_d${d}`;
+                    if (!userProgress[key]) {
+                        targetId = `card-w${w}-d${d}`;
+                        break; 
+                    }
+                }
+                if (targetId) break;
+            }
+
+            if (targetId) {
+                const el = document.getElementById(targetId);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Add a highlight effect
+                    el.classList.add('border-neon-green', 'shadow-[0_0_20px_rgba(57,255,20,0.3)]');
+                    setTimeout(() => {
+                        el.classList.remove('border-neon-green', 'shadow-[0_0_20px_rgba(57,255,20,0.3)]');
+                    }, 2000);
+                }
+            }
+        };
+
+        const handleLogout = () => {
+            localStorage.removeItem('gauntlet_user');
+            currentUser = null;
+            userProgress = {};
+            
+            // Reset UI
+            document.getElementById('nav-actions').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
+            
+            // Show Auth
+            showAuthView();
+        };
+
+        const showAuthView = () => {
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-email').value = '';
+        };
+
+        // --- DATA PERSISTENCE (LOCAL STORAGE) ---
+        const loadUserProgress = () => {
+            if (!currentUser) return;
+            // Key is unique to the email address
+            const key = `gauntlet_progress_${currentUser.email}`;
+            const storedData = localStorage.getItem(key);
+            
+            if (storedData) {
+                userProgress = JSON.parse(storedData);
+            } else {
+                userProgress = {};
+            }
+        };
+
+        const saveUserProgress = () => {
+            if (!currentUser) return;
+            const key = `gauntlet_progress_${currentUser.email}`;
+            localStorage.setItem(key, JSON.stringify(userProgress));
+        };
+        
+        const resetUserProgress = () => {
+            if(confirm("Are you sure? This will delete all progress for this user.")) {
+                userProgress = {};
+                saveUserProgress();
+                renderDashboard();
+                showView('dashboard');
+            }
+        };
+
+        // --- VIEW NAVIGATION ---
+        const showView = (viewName) => {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
+            
+            if (viewName === 'dashboard') document.getElementById('dashboard-view').classList.remove('hidden');
+            if (viewName === 'profile') document.getElementById('profile-view').classList.remove('hidden');
+        };
+
+        // --- DASHBOARD RENDERING ---
+        const renderDashboard = () => {
+            const container = document.getElementById('weeks-container');
+            container.innerHTML = '';
+            
+            let totalWorkouts = 0;
+            let completedWorkouts = 0;
+            let mainChallengeCompleted = true; // Tracks weeks 1-4
+
+            workoutData.forEach((week, wIndex) => {
+                const isBonus = week.isBonus;
+                
+                // Card for the week
+                const weekCard = document.createElement('div');
+                weekCard.className = `bg-card-bg rounded-xl border ${isBonus ? 'border-yellow-600' : 'border-gray-800'} overflow-hidden`;
+                
+                // Header
+                let weekHeaderHtml = `
+                    <div class="p-4 ${isBonus ? 'bg-yellow-900/20' : 'bg-gray-900'} flex justify-between items-center border-b border-gray-800">
+                        <h3 class="text-2xl font-teko ${isBonus ? 'text-yellow-500' : 'text-neon-green'}">${week.title}</h3>
+                        <span class="text-xs uppercase font-bold text-gray-500">${week.days.length} Days</span>
+                    </div>
+                    <div class="p-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+                `;
+
+                // Days
+                let daysHtml = '';
+                week.days.forEach((day, dIndex) => {
+                    const key = `w${wIndex}_d${dIndex}`;
+                    const isDone = userProgress[key] === true;
+                    const cardId = `card-w${wIndex}-d${dIndex}`; // Unique ID for navigation
+                    
+                    totalWorkouts++; 
+                    if (isDone) completedWorkouts++;
+                    
+                    // Main challenge check (Weeks 1-4 only)
+                    if (!isBonus && !isDone) {
+                        mainChallengeCompleted = false;
+                    }
+
+                    daysHtml += `
+                        <div id="${cardId}" onclick="openWorkout(${wIndex}, ${dIndex})" 
+                             class="cursor-pointer relative p-3 rounded-lg border transition duration-300 hover:scale-105 ${isDone ? 'bg-green-900/30 border-green-600' : 'bg-dark-bg border-gray-700 hover:border-gray-500'}">
+                            
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-teko text-xl text-white">DAY ${day.day}</span>
+                                ${isDone ? '<i class="fas fa-check-circle text-neon-green"></i>' : '<i class="far fa-circle text-gray-600"></i>'}
+                            </div>
+                            
+                            <p class="text-xs text-gray-400 font-bold uppercase truncate">${day.title}</p>
+                            <div class="mt-2 flex gap-1 flex-wrap">
+                                ${day.videos.map(v => `<span class="text-[10px] px-1 rounded ${v.type === 'Weights' ? 'bg-blue-900 text-blue-200' : 'bg-purple-900 text-purple-200'}">${v.time}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                weekCard.innerHTML = weekHeaderHtml + daysHtml + '</div>';
+                container.appendChild(weekCard);
+            });
+
+            // Update Stats
+            const pct = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0;
+            document.getElementById('total-progress').textContent = `${pct}%`;
+            document.getElementById('workouts-done').textContent = `${completedWorkouts}/${totalWorkouts}`;
+            
+            // Certificate Logic
+            const certBtnLocked = document.getElementById('cert-btn-locked');
+            const certBtnUnlocked = document.getElementById('cert-btn-unlocked');
+            
+            // Logic: Must complete weeks 1-4
+            if (mainChallengeCompleted && totalWorkouts > 0) {
+                certBtnLocked.classList.add('hidden');
+                certBtnUnlocked.classList.remove('hidden');
+            } else {
+                certBtnLocked.classList.remove('hidden');
+                certBtnUnlocked.classList.add('hidden');
+            }
+        };
+
+        // --- WORKOUT INTERACTION ---
+        const openWorkout = (wIndex, dIndex) => {
+            currentModalWeek = wIndex;
+            currentModalDay = dIndex;
+            const dayData = workoutData[wIndex].days[dIndex];
+            const key = `w${wIndex}_d${dIndex}`;
+            const isDone = userProgress[key] === true;
+
+            // Set Text
+            document.getElementById('modal-title').textContent = dayData.title;
+            document.getElementById('modal-subtitle').textContent = `${workoutData[wIndex].title} • DAY ${dayData.day}`;
+
+            // Render Videos
+            const contentDiv = document.getElementById('modal-content');
+            contentDiv.innerHTML = dayData.videos.map(video => `
+                <div class="mb-6">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-sm font-bold text-gray-300"><i class="fas fa-user-ninja mr-1"></i> Trainer: ${video.trainer}</span>
+                        <span class="text-xs bg-gray-700 px-2 py-1 rounded text-white">${video.type} • ${video.time}</span>
+                    </div>
+                    <div class="video-container shadow-lg border border-gray-800">
+                        <iframe src="https://www.youtube.com/embed/${video.id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            `).join('');
+
+            updateCompleteButton(isDone);
+            document.getElementById('workout-modal').classList.remove('hidden');
+        };
+
+        const updateCompleteButton = (isDone) => {
+            const btn = document.getElementById('mark-complete-btn');
+            if (isDone) {
+                btn.textContent = "COMPLETED";
+                btn.className = "bg-neon-green text-black px-6 py-2 rounded font-teko text-xl hover:bg-white transition shadow-[0_0_15px_rgba(57,255,20,0.5)]";
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> COMPLETED';
+            } else {
+                btn.textContent = "MARK COMPLETE";
+                btn.className = "bg-gray-700 text-white px-6 py-2 rounded font-teko text-xl hover:bg-neon-green hover:text-black transition";
+            }
+        };
+
+        const closeWorkoutModal = () => {
+            document.getElementById('workout-modal').classList.add('hidden');
+            document.getElementById('modal-content').innerHTML = ''; // Stop videos
+        };
+
+        const toggleCurrentWorkoutComplete = () => {
+            const key = `w${currentModalWeek}_d${currentModalDay}`;
+            const currentState = userProgress[key] || false;
+            const newState = !currentState;
+            
+            userProgress[key] = newState;
+            saveUserProgress(); // Save to local storage
+            
+            updateCompleteButton(newState);
+            renderDashboard();
+        };
+
+        // --- CERTIFICATE GENERATION ---
+        const showCertificate = () => {
+            const modal = document.getElementById('certificate-modal');
+            const canvas = document.getElementById('certificateCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const userName = currentUser ? currentUser.name : "Warrior";
+            
+            modal.classList.remove('hidden');
+
+            // Draw Certificate
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = "#39FF14";
+            ctx.lineWidth = 20;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 60px Teko";
+            ctx.textAlign = "center";
+            ctx.fillText("CERTIFICATE OF COMPLETION", canvas.width / 2, 120);
+
+            ctx.fillStyle = "#39FF14";
+            ctx.font = "bold 40px Teko";
+            ctx.fillText("GAUNTLET POWER SURGE", canvas.width / 2, 180);
+
+            ctx.fillStyle = "#ccc";
+            ctx.font = "20px Roboto";
+            ctx.fillText("This certifies that", canvas.width / 2, 260);
+
+            // Dynamic Name
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 50px Roboto";
+            ctx.fillText(userName.toUpperCase(), canvas.width / 2, 330);
+
+            ctx.fillStyle = "#ccc";
+            ctx.font = "20px Roboto";
+            ctx.fillText("Has successfully survived and conquered the 4-week challenge.", canvas.width / 2, 400);
+
+            const date = new Date().toLocaleDateString();
+            ctx.fillStyle = "#777";
+            ctx.font = "italic 18px Roboto";
+            ctx.fillText(`Awarded on: ${date}`, canvas.width / 2, 500);
+
+            ctx.fillStyle = "#39FF14";
+            ctx.font = "bold 30px Teko";
+            ctx.fillText("POWER SURGE", canvas.width / 2, 550);
+
+            const link = document.getElementById('download-link');
+            link.onclick = () => {
+                const image = canvas.toDataURL("image/png");
+                const a = document.createElement('a');
+                a.href = image;
+                a.download = `Gauntlet_Certificate_${userName}.png`;
+                a.click();
+            };
+        };
+
+        // Start App
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
